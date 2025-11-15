@@ -1,5 +1,5 @@
 [Unit]
-Description=Tank Robot Camera Stream Service
+Description=Tank Robot Web Control Service
 After=network.target
 
 [Service]
@@ -7,7 +7,7 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=/opt/tank-agent
-ExecStart=/usr/bin/python3 /opt/tank-agent/utils/camera_stream.py
+ExecStart=/usr/bin/python3 /opt/tank-agent/src/web_control.py
 Restart=always
 RestartSec=5
 Environment="PYTHONUNBUFFERED=1"

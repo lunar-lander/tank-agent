@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Robot Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .video-panel {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 8px;
+        }
+
+        .movement-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.6);
+            transform: translateY(-2px);
+        }
+
+        button:active, button.active {
+            background: rgba(76, 175, 80, 0.6);
+            border-color: #4CAF50;
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-forward {
+            grid-column: 2;
+        }
+
+        .btn-left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .btn-stop {
+            grid-column: 2;
+            grid-row: 2;
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+
+        .btn-stop:hover {
+            background: rgba(244, 67, 54, 0.5);
+        }
+
+        .btn-right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .btn-backward {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .speed-control {
+            margin-top: 15px;
+        }
+
+        .speed-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            margin: 10px 0;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .speed-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        .toggle-switch {
+            display: inline-block;
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.3);
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .emergency-stop {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: #f44336;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.3em;
+            margin-top: 20px;
+        }
+
+        .emergency-stop:hover {
+            background: rgba(244, 67, 54, 0.7);
+        }
+
+        .keyboard-hints {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .keyboard-hints h4 {
+            margin-bottom: 10px;
+        }
+
+        .keyboard-hints p {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin: 5px 0;
+        }
+
+        .autonomous-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .connection-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .disconnected {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Tank Robot Control</h1>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Status</div>
+                <div class="status-value" id="status">Ready</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Speed</div>
+                <div class="status-value"><span id="current-speed">50</span>%</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Camera Angle</div>
+                <div class="status-value"><span id="camera-angle">0</span>°</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Mode</div>
+                <div class="status-value" id="mode">Manual</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Connection</div>
+                <div class="connection-indicator" id="connection"></div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="video-panel">
+                <div class="video-container">
+                    <img src="/video_feed" alt="Camera Feed" class="video-feed" id="video-feed">
+                </div>
+                <div class="camera-controls">
+                    <button onclick="panCamera('pan_left')">⬅️ Pan Left (Q)</button>
+                    <button onclick="panCamera('center')">⏺️ Center</button>
+                    <button onclick="panCamera('pan_right')">➡️ Pan Right (E)</button>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-section">
+                    <h3>Movement Controls</h3>
+                    <div class="movement-controls">
+                        <button class="btn-forward" onmousedown="sendCommand('forward')" onmouseup="sendCommand('stop')" ontouchstart="sendCommand('forward')" ontouchend="sendCommand('stop')">
+                            ⬆️<br>W
+                        </button>
+                        <button class="btn-left" onmousedown="sendCommand('left')" onmouseup="sendCommand('stop')" ontouchstart="sendCommand('left')" ontouchend="sendCommand('stop')">
+                            ⬅️<br>A
+                        </button>
+                        <button class="btn-stop" onclick="sendCommand('stop')">
+                            🛑<br>STOP
+                        </button>
+                        <button class="btn-right" onmousedown="sendCommand('right')" onmouseup="sendCommand('stop')" ontouchstart="sendCommand('right')" ontouchend="sendCommand('stop')">
+                            ➡️<br>D
+                        </button>
+                        <button class="btn-backward" onmousedown="sendCommand('backward')" onmouseup="sendCommand('stop')" ontouchstart="sendCommand('backward')" ontouchend="sendCommand('stop')">
+                            ⬇️<br>S
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Speed Control</h3>
+                    <div class="speed-control">
+                        <input type="range" min="20" max="100" value="50" class="speed-slider" id="speed-slider">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9em; opacity: 0.8;">
+                            <span>20%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Autonomous Mode</h3>
+                    <div class="autonomous-control">
+                        <span>Enable AI Navigation</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autonomous-toggle" onchange="toggleAutonomous()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="emergency-stop" onclick="emergencyStop()">
+                    🚨 EMERGENCY STOP (SPACE)
+                </button>
+            </div>
+        </div>
+
+        <div class="keyboard-hints">
+            <h4>⌨️ Keyboard Controls</h4>
+            <p><strong>WASD / Arrow Keys:</strong> Movement | <strong>Q/E:</strong> Camera Pan | <strong>Space:</strong> Emergency Stop</p>
+        </div>
+    </div>
+
+    <script>
+        let currentSpeed = 50;
+        let isKeyPressed = {};
+
+        // Speed slider
+        document.getElementById('speed-slider').addEventListener('input', function(e) {
+            currentSpeed = parseInt(e.target.value);
+            document.getElementById('current-speed').textContent = currentSpeed;
+
+            fetch('/api/speed', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({speed: currentSpeed})
+            });
+        });
+
+        // Send movement command
+        function sendCommand(command) {
+            fetch('/api/control', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: command, speed: currentSpeed})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateStatus(command);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Camera control
+        function panCamera(command) {
+            fetch('/api/camera', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: command})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.angle !== undefined) {
+                    document.getElementById('camera-angle').textContent = data.angle;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Toggle autonomous mode
+        function toggleAutonomous() {
+            const enabled = document.getElementById('autonomous-toggle').checked;
+
+            fetch('/api/autonomous', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled: enabled})
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('mode').textContent = enabled ? 'Autonomous' : 'Manual';
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Emergency stop
+        function emergencyStop() {
+            fetch('/api/emergency_stop', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(() => {
+                updateStatus('EMERGENCY STOP');
+                document.getElementById('autonomous-toggle').checked = false;
+                document.getElementById('mode').textContent = 'Manual';
+            });
+        }
+
+        // Update status display
+        function updateStatus(command) {
+            const statusMap = {
+                'forward': 'Moving Forward',
+                'backward': 'Moving Backward',
+                'left': 'Turning Left',
+                'right': 'Turning Right',
+                'stop': 'Stopped',
+                'EMERGENCY STOP': '🚨 STOPPED'
+            };
+            document.getElementById('status').textContent = statusMap[command] || command;
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            if (isKeyPressed[e.key]) return;
+            isKeyPressed[e.key] = true;
+
+            const keyMap = {
+                'w': 'forward', 'ArrowUp': 'forward',
+                's': 'backward', 'ArrowDown': 'backward',
+                'a': 'left', 'ArrowLeft': 'left',
+                'd': 'right', 'ArrowRight': 'right',
+                ' ': 'emergency_stop',
+                'q': 'pan_left',
+                'e': 'pan_right'
+            };
+
+            if (keyMap[e.key]) {
+                e.preventDefault();
+                if (e.key === ' ') {
+                    emergencyStop();
+                } else if (e.key === 'q' || e.key === 'e') {
+                    panCamera(keyMap[e.key]);
+                } else {
+                    sendCommand(keyMap[e.key]);
+                    highlightButton(keyMap[e.key]);
+                }
+            }
+        });
+
+        document.addEventListener('keyup', function(e) {
+            isKeyPressed[e.key] = false;
+
+            const keyMap = {
+                'w': 'forward', 'ArrowUp': 'forward',
+                's': 'backward', 'ArrowDown': 'backward',
+                'a': 'left', 'ArrowLeft': 'left',
+                'd': 'right', 'ArrowRight': 'right'
+            };
+
+            if (keyMap[e.key]) {
+                e.preventDefault();
+                sendCommand('stop');
+                removeHighlight(keyMap[e.key]);
+            }
+        });
+
+        function highlightButton(command) {
+            const btnClass = 'btn-' + command;
+            const btn = document.querySelector('.' + btnClass);
+            if (btn) btn.classList.add('active');
+        }
+
+        function removeHighlight(command) {
+            const btnClass = 'btn-' + command;
+            const btn = document.querySelector('.' + btnClass);
+            if (btn) btn.classList.remove('active');
+        }
+
+        // Connection monitor
+        setInterval(function() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('connection').classList.remove('disconnected');
+                })
+                .catch(() => {
+                    document.getElementById('connection').classList.add('disconnected');
+                });
+        }, 2000);
+
+        // Prevent context menu on buttons
+        document.addEventListener('contextmenu', e => {
+            if (e.target.tagName === 'BUTTON') {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,7 @@
 lgpio>=0.2.0
 PyYAML>=6.0
 flask>=2.0.0
+flask-cors>=3.0.0
 picamera2>=0.3.0
+opencv-python>=4.5.0
+numpy>=1.21.0
