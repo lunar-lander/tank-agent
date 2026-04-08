@@ -1,0 +1,16 @@
+[Unit]
+Description=Tank Robot Autonomous Agent Service
+After=network.target tank-control.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/tank-agent
+ExecStart=/usr/bin/python3 /opt/tank-agent/src/autonomous_agent.py
+Restart=always
+RestartSec=10
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
