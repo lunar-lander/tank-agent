@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-WorkingDirectory=/opt/tank-agent
-ExecStart=/usr/bin/python3 /opt/tank-agent/utils/camera_stream.py
+User=ixaxaar
+Group=ixaxaar
+WorkingDirectory=/home/ixaxaar/tank-agent
+ExecStart=/usr/bin/python3 /home/ixaxaar/tank-agent/utils/camera_stream.py
 Restart=always
 RestartSec=5
 Environment="PYTHONUNBUFFERED=1"

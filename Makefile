@@ -1,10 +1,10 @@
 # Tank Robot Makefile
 # Installation and deployment for Raspberry Pi
 
-INSTALL_DIR = /opt/tank-agent
+INSTALL_DIR = /home/ixaxaar/tank-agent
 SERVICE_DIR = /etc/systemd/system
 PYTHON = python3
-USER = pi
+USER = ixaxaar
 
 .PHONY: help install install-deps install-files install-services enable-services uninstall clean test
 

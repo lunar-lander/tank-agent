@@ -7,6 +7,7 @@ Provides real-time control and camera streaming for the robot tank
 import sys
 import io
 import time
+import signal
 import threading
 from pathlib import Path
 from flask import Flask, render_template, Response, jsonify, request
@@ -65,7 +66,9 @@ def init_tank():
     """Initialize tank controller"""
     global tank
     try:
-        tank = TankController()
+        # Resolve config relative to this file so it works from any CWD
+        config_dir = str(Path(__file__).resolve().parent.parent / "config")
+        tank = TankController(config_dir=config_dir)
         print("✅ Tank controller initialized")
         return True
     except Exception as e:
@@ -265,7 +268,15 @@ def cleanup():
     print("👋 Shutdown complete")
 
 
+def _signal_handler(signum, frame):
+    """Handle SIGTERM/SIGINT by routing through graceful shutdown so
+    motors are stopped (prevents wheels staying powered on service restart)"""
+    raise KeyboardInterrupt()
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
     print("🤖 Tank Robot Web Control")
     print("=" * 50)
 

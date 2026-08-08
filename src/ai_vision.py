@@ -7,6 +7,7 @@ Provides obstacle detection, object recognition, and visual navigation
 import cv2
 import numpy as np
 import time
+import sys
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from enum import Enum

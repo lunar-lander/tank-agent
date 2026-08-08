@@ -32,8 +32,11 @@ class GPIO:
     def setmode(cls, mode):
         """Set GPIO numbering mode (BCM/BOARD)"""
         if PI5_AVAILABLE:
-            # lgpio always uses BCM numbering
-            cls._handle = lgpio.gpiochip_open(0)
+            # lgpio always uses BCM numbering; open the chip once so all
+            # pins are claimed on the same handle (reopening would make
+            # later writes fail with "GPIO busy")
+            if cls._handle is None:
+                cls._handle = lgpio.gpiochip_open(0)
         elif RPI_GPIO_AVAILABLE:
             RPI_GPIO_MODULE.setmode(RPI_GPIO_MODULE.BCM if mode == "BCM" else RPI_GPIO_MODULE.BOARD)
         else:
@@ -59,8 +62,10 @@ class GPIO:
     @classmethod
     def output(cls, pin, value):
         """Set GPIO pin output"""
-        if PI5_AVAILABLE and cls._handle is not None:
-            lgpio.gpio_write(cls._handle, pin, value)
+        if PI5_AVAILABLE:
+            # On Pi 5 use lgpio; if the chip has been cleaned up this is a no-op
+            if cls._handle is not None:
+                lgpio.gpio_write(cls._handle, pin, value)
         elif RPI_GPIO_AVAILABLE:
             RPI_GPIO_MODULE.output(pin, value)
         else:
@@ -92,7 +97,6 @@ class GPIO:
 class LgpioPWM:
     """PWM implementation using lgpio for Pi 5"""
     def __init__(self, handle, pin, frequency):
-        self.handle = handle
         self.pin = pin
         self.frequency = frequency
         self.duty_cycle = 0
@@ -101,23 +105,20 @@ class LgpioPWM:
     def start(self, duty_cycle):
         """Start PWM with given duty cycle"""
         self.duty_cycle = duty_cycle
-        if self.handle is not None:
-            # Convert duty cycle (0-100) to lgpio format (0-1000000)
-            duty_lgpio = int((duty_cycle / 100.0) * 1000000)
-            lgpio.tx_pwm(self.handle, self.pin, self.frequency, duty_lgpio)
+        if GPIO._handle is not None:
+            lgpio.tx_pwm(GPIO._handle, self.pin, self.frequency, duty_cycle)
         self.running = True
     
     def ChangeDutyCycle(self, duty_cycle):
         """Change PWM duty cycle"""
         self.duty_cycle = duty_cycle
-        if self.running and self.handle is not None:
-            duty_lgpio = int((duty_cycle / 100.0) * 1000000)
-            lgpio.tx_pwm(self.handle, self.pin, self.frequency, duty_lgpio)
+        if self.running and GPIO._handle is not None:
+            lgpio.tx_pwm(GPIO._handle, self.pin, self.frequency, duty_cycle)
     
     def stop(self):
         """Stop PWM"""
-        if self.handle is not None:
-            lgpio.tx_pwm(self.handle, self.pin, 0, 0)  # Stop PWM
+        if GPIO._handle is not None:
+            lgpio.tx_pwm(GPIO._handle, self.pin, 0, 0)  # Stop PWM
         self.running = False
 
 class SimulatedPWM:
